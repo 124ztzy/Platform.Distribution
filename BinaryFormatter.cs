@@ -1,10 +1,10 @@
 using System;
 using System.IO;
 
-
 namespace Platform.Distribution
 {
     //二进制序列化
+    //代替System.Runtime.Serialization.Formatters.Binary.BinaryFormatter，创建一种能保存原有数据类型的序列化方式，尽可能节约网络流量。
     public class BinaryFormatter
     {
         //序列化
@@ -311,6 +311,5 @@ namespace Platform.Distribution
                     throw new Exception($"not support ReadValue {code}");
             }
         } 
-       
     }
 }

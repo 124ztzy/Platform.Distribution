@@ -39,7 +39,7 @@ namespace Platform.Distribution
                             else if(value is object[] outputs)
                             {
                                 Program.Log($"received {outputs[0]} {salve.EndPoint} input {outputs[1]} output {outputs[2]}");
-                                _jobs[outputs[0].ToString()].Results.Add(outputs[1], outputs[2]);
+                                _jobs[outputs[0].ToString()].AddResult(outputs[1], outputs[2]);
                             }
                         }
                     }
@@ -78,7 +78,7 @@ namespace Platform.Distribution
         
 
         //运行任务
-        public void RunJob(string dllPath, string className, params string[] args)
+        public void RunJob(string dllPath, string className, object arg)
         {
             ThreadPool.QueueUserWorkItem(obj => {
                 // try
@@ -87,22 +87,26 @@ namespace Platform.Distribution
                     Type type = Type.GetType(className);
                     IJob job = (IJob)Activator.CreateInstance(type);
                     _jobs.Add(job.JobName, job);
-
-                    ICollection slices = job.Split(args);
-                    Program.Log($"{job.JobName} slicesCount {slices.Count} salvesCount {_salves.Count}");
-
-                    foreach(object slice in slices)
+                    //拆分任务
+                    job.Split(arg);
+                    Program.Log($"{job.JobName} slicesCount {job.Slices.Count} salvesCount {_salves.Count}");
+                    //分发执行
+                    foreach(JobSlice slice in job.Slices)
                     {
                         MasterSalve salve = SelectSalve();
-                        Program.Log($"{job.JobName} allot {salve.EndPoint} input {slice}");
-                        SendTo(salve, new object[] { job.JobName, dllPath, className, slice });
+                        slice.MachineName = salve.EndPoint.ToString();
+                        slice.AssemblyPath = dllPath;
+                        slice.ClassName = className;
+                        slice.MethodName = "Execute";
+                        Program.Log($"{slice.MachineName} allot {slice.MachineName} input {slice.MethodInput}");
+                        SendTo(salve, new object[] { job.JobName, dllPath, className, slice.MethodInput });
                     }
 
-                    while(job.Results.Count != slices.Count)
+                    while(job.Progress < 1)
                     {
                         Thread.Sleep(1000);
                     }
-                    object output = job.Combine(job.Results);
+                    object output = job.Combine();
                     Program.Log($"{job.JobName} result {output}");
                 // }
                 // catch(Exception e)

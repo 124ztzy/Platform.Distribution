@@ -39,7 +39,7 @@ namespace Platform.Distribution
                         break;
                     case ">run-job":
                         if(commands.Length >= 3)
-                            _master.RunJob(commands[1], commands[2]);
+                            _master.RunJob(commands[1], commands[2], null);
                         break;
 
                     case ">test":
